@@ -1,5 +1,5 @@
-pub mod movie;
 mod tests;
+pub mod movie;
 use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder, Locator};
