@@ -1,3 +1,4 @@
+#[cfg(test)]
 use fantoccini::error::CmdError;
 #[cfg(test)]
 use fantoccini::ClientBuilder;
