@@ -1,6 +1,5 @@
 pub mod screening;
 use screening::Screening;
-use scraper::{Html, Selector};
 use unidecode::unidecode;
 
 
@@ -12,13 +11,13 @@ pub struct Movie {
 
 impl Movie {
     pub fn new(title: String, director: String) -> Self {
-        let formatted_title = title.replace(" ", "+").to_ascii_uppercase();
+        let formatted_title = title.replace(" ", "+");
 
         Self {
             // _card_url: Self::get_movie_url(&formatted_title, &director),
             search_url: String::from(format!("https://www.allocine.fr/rechercher/?q={}",formatted_title)),
-            title: unidecode(&title.to_ascii_uppercase()),
-            director: unidecode(&director.to_ascii_uppercase()),
+            title: unidecode(&title).to_ascii_uppercase(),
+            director: unidecode(&director).to_ascii_uppercase(),
         }
     }
 
