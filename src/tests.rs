@@ -27,4 +27,3 @@ fn movie_url_is_built() {
     assert_eq!(_movie_le_sacrifice.search_url, "https://www.allocine.fr/rechercher/?q=Le+sacrifice");
     //Ok(())
 }
-

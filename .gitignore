@@ -1,1 +1,4 @@
 /target
+geckodriver_install.sh
+start.sh
+start_sql_db

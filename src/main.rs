@@ -1,9 +1,10 @@
-mod tests;
 pub mod movie;
+mod tests;
 use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder, Locator};
 use movie::Movie;
+use std::io;
 use unidecode::unidecode;
 
 async fn accept_paywall(p_client: &Client) -> Result<(), CmdError> {
@@ -15,7 +16,7 @@ async fn accept_paywall(p_client: &Client) -> Result<(), CmdError> {
 
     match v_button {
         Ok(i) => i.click().await,
-        Err(_) => Ok(()) // Skip if there is no paywall
+        Err(_) => Ok(()), // Skip if there is no paywall
     }
 }
 
@@ -58,6 +59,8 @@ async fn get_movie_card(
         )
         .to_ascii_uppercase();
 
+        println!("{} {}",&movie_title,&director);
+
         let card_of_movie: Option<Element> = match director.as_str() {
             ref x if x == &p_movie.director => match movie_title.as_str() {
                 ref y if y == &p_movie.title => Some(card.clone()), //todo : clone nécessaire ?
@@ -81,11 +84,6 @@ async fn go_to_movie_page(p_card: &Element) -> Result<(), CmdError> {
 
 #[tokio::main]
 async fn main() -> Result<(), CmdError> {
-    let test_movie = Movie::new(
-        String::from("Dune : Deuxième Partie"),
-        String::from("Denis Villeneuve"),
-    );
-
     let client = ClientBuilder::native()
         .connect("http://localhost:4444")
         .await
@@ -93,18 +91,32 @@ async fn main() -> Result<(), CmdError> {
             "Failed to connect to WebDriver. \n 
             Start the WebDriver with 'geckodriver' command",
         );
-
-    //Gérer l'erreur ?
     accept_paywall(&client).await?;
-    let cards = get_all_cards_of_search(&client, &test_movie).await?;
-    let movie_card = get_movie_card(&test_movie, &cards).await?;
-    match movie_card {
-        Some(i) => go_to_movie_page(&i).await?,
-        _ => println!(
-            "No card found for this movie : {} {}",
-            test_movie.director, test_movie.title
-        ),
-    };
 
+    // loop {
+        let mut input_movie = String::new();
+        println!("Entrer le nom du film : ");
+        io::stdin().read_line(&mut input_movie).expect("Failed to read line");
+        input_movie = String::from(input_movie.trim_end());
+
+        let mut input_director = String::new();
+        println!("Entrer le nom du réalisateur: ");
+        io::stdin().read_line(&mut input_director).expect("Failed to read line");
+        input_director = String::from(input_director.trim_end());
+
+
+        let test_movie = Movie::new(input_movie,input_director);
+
+        //Gérer l'erreur ?
+        let cards = get_all_cards_of_search(&client, &test_movie).await?;
+        let movie_card = get_movie_card(&test_movie, &cards).await?;
+        match movie_card {
+            Some(i) => go_to_movie_page(&i).await?,
+            _ => println!(
+                "No card found for this movie : {} {}",
+                test_movie.title, test_movie.director
+            ),
+        // };
+    }
     client.close().await
 }

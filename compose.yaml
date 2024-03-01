@@ -1,0 +1,20 @@
+services:
+  app:
+    image: rust:1.67
+    command: cargo install --path .
+    environment :
+      MYSQL_HOST: allocine-db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: secret
+      MYSQL_DB: allocine-movies
+  mysql:
+    image: mysql:8.0
+    volumes:
+      - todo-mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: allocine-movies
+
+
+volumes:
+  todo-mysql-data:
