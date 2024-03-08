@@ -6,11 +6,11 @@ use unidecode::unidecode;
 use fantoccini::elements::Element;
 use fantoccini::{Client, Locator};
 
-pub struct Interact;
+pub struct AllocineAction;
 
 type Result<T> = std::result::Result<T, AppError>;
 
-impl Interact {
+impl AllocineAction {
     pub async fn accept_paywall(p_client: &Client) -> Result<()> {
         //Click the paywall if there is one
         p_client.goto("https://www.allocine.fr").await?;
@@ -29,8 +29,6 @@ impl Interact {
         //Find all movie cards in the search page
         p_client.goto(&p_movie.search_url).await?;
         p_client.current_url().await?;
-        // let url = p_client.current_url().await?;
-        // assert_eq!(url.as_ref(), &p_movie.search_url);
         let cards = p_client.find_all(Locator::Css("li.mdl")).await?;
         Ok(cards)
     }
@@ -57,8 +55,6 @@ impl Interact {
                     .unwrap(),
             )
             .to_ascii_uppercase();
-
-            // println!("{} {}", &movie_title, &director);
 
             if movie_title == p_movie.title && director == p_movie.director {
                 return Ok(card.clone());

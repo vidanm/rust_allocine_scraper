@@ -3,7 +3,7 @@ pub mod movie;
 pub mod interact;
 mod tests;
 use crate::movie::Movie;
-use interact::Interact;
+use interact::AllocineAction;
 use errors::AppError;
 use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
@@ -14,20 +14,20 @@ type Result<T> = std::result::Result<T, AppError>;
 async fn do_steps(p_client: &Client) -> Result<()> {
     let test_movie = Movie::new(String::from("Dune"), String::from("Denis Villeneuve"));
 
-    let cards = Interact::get_all_cards_of_search(p_client, &test_movie).await?;
-    let movie_card = Interact::get_movie_card(&test_movie, &cards).await?;
+    let cards = AllocineAction::get_all_cards_of_search(p_client, &test_movie).await?;
+    let movie_card = AllocineAction::get_movie_card(&test_movie, &cards).await?;
 
-    Interact::go_to_screening_page(p_client, &movie_card).await?;
+    AllocineAction::go_to_screening_page(p_client, &movie_card).await?;
 
-    let date_tabs: Vec<Element> = Interact::get_date_tabs(&p_client).await?;
+    let date_tabs: Vec<Element> = AllocineAction::get_date_tabs(&p_client).await?;
     let date_tab = date_tabs.first().ok_or_else(|| AppError::ElementNotFound)?;
-    let theater_cards: Vec<Element> = Interact::get_theater_cards(&p_client, &date_tab).await?;
+    let theater_cards: Vec<Element> = AllocineAction::get_theater_cards(&p_client, &date_tab).await?;
 
     let theater_card = theater_cards
         .first()
         .ok_or_else(|| AppError::ElementNotFound)?;
 
-    let _theater_screenings = Interact::get_theater_screenings(&theater_card).await?;
+    let _theater_screenings = AllocineAction::get_theater_screenings(&theater_card).await?;
 
     Ok(())
 }
@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
             AppError::CmdError(e) => match e {
                 CmdError::Standard(wd) => match wd.error() {
                     "element click intercepted" => {
-                        let _ = Interact::accept_paywall(&client).await;
+                        let _ = AllocineAction::accept_paywall(&client).await;
                         let _ = do_steps(&client).await;
                     }
                     _s => println!("{}", _s), //todo Revoir
