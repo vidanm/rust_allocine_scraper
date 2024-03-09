@@ -31,12 +31,4 @@ impl Movie {
             director: unidecode(&director).to_ascii_uppercase(),
         }
     }
-
-    pub fn get_screenings(&self) -> Screening {
-        Screening {
-            date_time: String::from(""),
-            location: String::from(""),
-            cinema: String::from(""),
-        }
-    }
 }

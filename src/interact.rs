@@ -105,17 +105,26 @@ impl AllocineAction {
     pub async fn get_theater_screenings(p_theater_card: &Element) -> Result<Vec<Screening>> {
         let mut screenings: Vec<Screening> = Vec::new();
 
-        let v_screening_cards = p_theater_card
-            .find_all(Locator::Css("span.showtimes-hour-item-value"))
+        let v_cinema = p_theater_card.find(Locator::Css("div.meta-theater>div.meta-theater-title")).await?.text().await?;
+        let v_location = p_theater_card.find(Locator::Css("address")).await?.text().await?;
+
+        let v_versions = p_theater_card
+        .find_all(Locator::Css("div.showtimes-version"))
+            // .find_all(Locator::Css("span.showtimes-hour-item-value"))
             .await?;
 
-        for scr_card in v_screening_cards.into_iter() {
-            let datetime = scr_card.text().await?;
-            screenings.push(Screening::new(
-                datetime,
-                String::from("UNDEFINED"),
-                String::from("UNDEFINED"),
-            ));
+        for version in v_versions {
+            let v_screening_card = version.find_all(Locator::Css("span.showtimes-hour-item-value")).await?;
+            
+            for scr_card in v_screening_card {
+                    let datetime = scr_card.text().await?;
+                    screenings.push(Screening::new(
+                        version.text().await?,
+                        datetime,
+                        v_location.to_string(),
+                        v_cinema.to_string(),
+                    ));
+            }
         }
 
         println!("{:?}", screenings);
