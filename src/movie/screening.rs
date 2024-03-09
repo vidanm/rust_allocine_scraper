@@ -1,4 +1,6 @@
-// pub use screening::Screening;
+use core::fmt::Formatter;
+use std::fmt::{Result,Display};
+
 #[derive(Debug)] //allows printing in terminal
 pub struct Screening {
     pub version:String,
@@ -21,5 +23,15 @@ impl Default for Screening {
             location:String::from(""),
             cinema:String::from("")
         }
+    }
+}
+
+impl Display for Screening {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{} {} {} {}", self.version, self.date_time,self.location,self.cinema)
     }
 }

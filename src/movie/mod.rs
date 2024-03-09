@@ -1,5 +1,4 @@
 pub mod screening;
-use screening::Screening;
 use unidecode::unidecode;
 use core::fmt::{Result,Formatter,Display};
 
