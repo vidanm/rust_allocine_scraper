@@ -1,7 +1,8 @@
 use core::fmt::Formatter;
 use std::fmt::{Result,Display};
+use rocket::serde::Serialize;
 
-#[derive(Debug)] //allows printing in terminal
+#[derive(Debug,Serialize)] //allows printing in terminal
 pub struct Screening {
     pub version:String,
     pub date_time:String,

@@ -2,19 +2,14 @@ pub mod errors;
 pub mod interact;
 pub mod movie;
 mod tests;
-use std::error::Error;
 
 use crate::movie::Movie;
 use errors::AppError;
-use fantoccini::elements::Element;
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder};
 use interact::AllocineAction;
-use itertools::Itertools;
-use rocket::http::hyper::body::HttpBody;
 use rocket::State;
-
-type Result<T> = std::result::Result<T, AppError>;
+use serde_json;
 
 #[macro_use]
 extern crate rocket;
@@ -33,40 +28,31 @@ async fn index(director: String, title: String, p_client: &State<Client>) -> Str
     let p_movie = Movie::new(title.to_string(), director.to_string());
     let out = match AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await {
         Ok(c) => {
-            let x: Vec<String> = c
-                .into_iter()
-                .map(|x| {
-                    let mut s = x.cinema;
-                    s.push_str("\n");
-                    s.push_str(&x.location);
-                    s.push_str(&x.version);
-                    s.push_str(&x.date_time);
-                    s.push_str("\n");
-                    s.replace("Réserver","")
-                })
-                .collect();
-            x.join("\n").to_owned()
+            match serde_json::to_string(&c) {
+                Ok(x) => x,
+                Err(e) => e.to_string()
+            }
         }
         Err(e) => match e {
-            AppError::IllegalArgument => String::from("Illegal Argument Error"), //println!("Illegal Argument Error"),
-            AppError::ElementNotFound => String::from("Element Not Found Error"), //println!("Element Not Found Error"),
+            AppError::IllegalArgument => String::from("Illegal Argument Error"),
+            AppError::ElementNotFound => String::from("Element Not Found Error"),
             AppError::CmdError(e) => match e {
                 CmdError::Standard(wd) => match wd.error() {
                     "element click intercepted" => {
                         let _ = AllocineAction::accept_paywall(p_client).await;
-                        let _ =
-                            AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await;
-                        String::from("Element click intercepted")
+                        format!("{}","element click intercepted").to_string()
+                        // A implémenter : récursion
+                        // index(director,title,p_client).await
                     }
                     _e => {
                         println!("{}", _e);
-                        String::from("Error occured see console")
-                    } //todo Revoir //todo Revoir
+                        format!("{}",_e).to_string()
+                    }
                 },
                 _e => {
                     println!("{}", _e);
-                    String::from("Error occured see console")
-                } //todo Revoir
+                    format!("{}",_e).to_string()
+                }
             },
         },
     };
