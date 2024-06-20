@@ -1,20 +1,35 @@
 services:
-  app:
-    image: rust:1.67
-    command: cargo install --path .
-    environment :
-      MYSQL_HOST: allocine-db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: secret
-      MYSQL_DB: allocine-movies
-  mysql:
-    image: mysql:8.0
-    volumes:
-      - todo-mysql-data:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: allocine-movies
+  gecko:
+    build: gecko/.
+    networks: 
+      - gecko-net
+    ports:
+      - "4444:4444"
+  scraper:
+    build: back/.
+    networks: 
+      - gecko-net
+    ports:
+      - "8000:8000"
+    restart : on-failure
+    depends_on:
+      - gecko
+    # environment :
+    #   MYSQL_HOST: allocine-db
+    #   MYSQL_USER: root
+    #   MYSQL_PASSWORD: secret
+    #   MYSQL_DB: allocine-movies
 
-
-volumes:
-  todo-mysql-data:
+  # mysql:
+  #   image: mysql:8.0
+  #   volumes:
+  #     - todo-mysql-data:/var/lib/mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: secret
+  #     MYSQL_DATABASE: allocine-movies
+# volumes:
+#   todo-mysql-data:
+networks:
+  gecko-net:
+    name: gecko-net
+    external: true
