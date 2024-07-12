@@ -12,18 +12,18 @@ use serde_json;
 
 #[macro_use]
 extern crate rocket;
-use rocket::Shutdown;
-
-#[get("/shutdown")]
-async fn shutdown(shutdown: Shutdown) -> &'static str {
-    shutdown.notify();
-    //close client
-    // p_client.close().await;
-    "Shutting down..."
-}
+//use rocket::Shutdown;
+//
+//#[get("/shutdown")]
+//async fn shutdown(shutdown: Shutdown) -> &'static str {
+//    shutdown.notify();
+//    //close client
+//    // p_client.close().await;
+//    "Shutting down..."
+//}
 
 #[get("/<director>/<title>")]
-async fn index(director: String, title: String, p_client: &State<Client>) -> String {
+async fn index(director: &str, title: &str, p_client: &State<Client>) -> String {
     let p_movie = Movie::new(title.to_string(), director.to_string());
     let out = match AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await {
         Ok(c) => match serde_json::to_string(&c) {
@@ -59,17 +59,22 @@ async fn index(director: String, title: String, p_client: &State<Client>) -> Str
 #[launch]
 #[tokio::main]
 async fn rocket() -> _ {
-    let client = ClientBuilder::native()
-        .connect("http://gecko:4444")
-        .await
-        .expect(
-            "Failed to connect to WebDriver. \n 
-            Start the WebDriver with 'geckodriver' command",
-        );
-
+    //let _client: &'static Client =
     // rocket::custom(config).mount("/",routes![index])
-    // rocket::build().manage(&client).mount("/", routes![index])
-    rocket::build().mount("/", routes![index])
+    //_client.close().await.expect("Can't close the client");
+    //rocket::build().mount("/", routes![index])
+    //rocket::build().manage(&_client).mount("/", routes![index])
+    rocket::build()
+        .manage(
+            ClientBuilder::native()
+                .connect("http://127.0.0.1:4444")
+                .await
+                .expect(
+                    "Failed to connect to WebDriver. \n 
+            Start the WebDriver with 'geckodriver' command",
+                ),
+        )
+        .mount("/", routes![index])
 }
 // #[rocket::async_trait]
 // impl Fairing for Client {

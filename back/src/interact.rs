@@ -30,17 +30,33 @@ impl AllocineAction {
         p_movie: &Movie,
     ) -> Result<Vec<Screening>> {
         let cards = Self::get_all_cards_of_search(p_client, &p_movie).await?;
-        let movie_card = Self::get_movie_card(&p_movie, &cards).await?;
+        let movie_card = Self::get_right_movie_card(&p_movie, &cards).await?;
         Self::go_to_screening_page(p_client, &movie_card).await?;
         let date_tabs = Self::get_date_tabs(&p_client).await?;
 
         let mut screenings: Vec<Screening> = Vec::new();
-        for date_tab in date_tabs {
-            let theater_cards = Self::get_theater_cards(&p_client, &date_tab).await?;
-            for theater_card in theater_cards {
-                let mut _theater_screenings = Self::get_theater_screenings(&theater_card).await?;
-                screenings.append(&mut _theater_screenings);
-            }
+        for date_tab in date_tabs.into_iter() {
+            date_tab.click().await?;
+            p_client
+                .wait()
+                .for_element(Locator::Css("section.theaters-list:not(.loading)"))
+                .await?;
+            screenings.extend(Self::get_all_screenings_on_current_page(p_client).await?);
+        }
+
+        Ok(screenings)
+    }
+
+    pub async fn get_all_screenings_on_current_page(p_client: &Client) -> Result<Vec<Screening>> {
+        let mut screenings: Vec<Screening> = Vec::new();
+        let theater_cards = Self::get_theater_cards(&p_client).await?;
+        for theater_card in theater_cards.into_iter() {
+            let mut _theater_screenings = Self::get_theater_screenings(&theater_card).await?;
+            //let mut _theater_screenings = match Self::get_theater_screenings(&theater_card).await {
+            //    Ok(x) => x,
+            //    Err(_e) => Vec::new(),
+            //};
+            screenings.append(&mut _theater_screenings);
         }
 
         Ok(screenings)
@@ -54,7 +70,7 @@ impl AllocineAction {
         Ok(cards)
     }
 
-    async fn get_movie_card(p_movie: &Movie, p_cards: &Vec<Element>) -> Result<Element> {
+    async fn get_right_movie_card(p_movie: &Movie, p_cards: &Vec<Element>) -> Result<Element> {
         let card_iter = p_cards.into_iter();
         for card in card_iter {
             let director = unidecode(
@@ -110,8 +126,7 @@ impl AllocineAction {
         Ok(date_tabs)
     }
 
-    async fn get_theater_cards(p_client: &Client, p_date_tab: &Element) -> Result<Vec<Element>> {
-        p_date_tab.click().await?;
+    async fn get_theater_cards(p_client: &Client) -> Result<Vec<Element>> {
         p_client
             .wait()
             .at_most(Duration::from_secs(3))
@@ -131,6 +146,7 @@ impl AllocineAction {
             .await?
             .text()
             .await?;
+
         let v_location = p_theater_card
             .find(Locator::Css("address"))
             .await?
@@ -158,7 +174,7 @@ impl AllocineAction {
             }
         }
 
-        println!("{:?}", screenings);
+        //println!("{:?}", screenings);
         Ok(screenings)
     }
 }
