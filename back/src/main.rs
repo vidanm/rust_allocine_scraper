@@ -22,9 +22,12 @@ extern crate rocket;
 //    "Shutting down..."
 //}
 
-#[get("/<director>/<title>")]
-async fn index(director: &str, title: &str, p_client: &State<Client>) -> String {
+async fn get_screenings(director: &str, title: &str, p_client: &State<Client>) -> String {
     let p_movie = Movie::new(title.to_string(), director.to_string());
+
+    let _ = AllocineAction::accept_paywall(p_client).await; //Traiter l'erreur si le click ne
+    let _ = AllocineAction::close_interstitial(p_client).await; //fonctionne pas ?
+
     let out = match AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await {
         Ok(c) => match serde_json::to_string(&c) {
             Ok(x) => x,
@@ -39,7 +42,6 @@ async fn index(director: &str, title: &str, p_client: &State<Client>) -> String 
                         let _ = AllocineAction::accept_paywall(p_client).await;
                         format!("{}", "element click intercepted").to_string()
                         // A implémenter : récursion
-                        // index(director,title,p_client).await
                     }
                     _e => {
                         println!("{}", _e);
@@ -54,6 +56,11 @@ async fn index(director: &str, title: &str, p_client: &State<Client>) -> String 
         },
     };
     out
+}
+
+#[get("/<director>/<title>")]
+async fn index(director: &str, title: &str, p_client: &State<Client>) -> String {
+    get_screenings(director, title, p_client).await
 }
 
 #[launch]
@@ -79,4 +86,4 @@ async fn rocket() -> _ {
 // #[rocket::async_trait]
 // impl Fairing for Client {
 
-// }
+// r

@@ -11,18 +11,46 @@ pub struct AllocineAction;
 type Result<T> = std::result::Result<T, AppError>;
 
 impl AllocineAction {
+    //pub async fn go_to_home_page(p_client: &Client) -> Result<()> {}
+
     pub async fn accept_paywall(p_client: &Client) -> Result<()> {
         //Click the paywall if there is one
         p_client.goto("https://www.allocine.fr").await?;
-        let v_button = p_client
-            .find(Locator::Css("button.jad_cmp_paywall_button-cookies"))
-            .await;
+
+        let button_locator = Locator::Css("button.jad_cmp_paywall_button-cookies");
+        p_client
+            .wait()
+            .at_most(Duration::from_secs(3))
+            .for_element(button_locator)
+            .await?;
+
+        let v_button = p_client.find(button_locator).await;
 
         if let Ok(i) = v_button {
             i.click().await?
         }
 
-        Ok(()) //Skip if there is no paywall
+        Ok(())
+    }
+
+    pub async fn close_interstitial(p_client: &Client) -> Result<()> {
+        //Click the paywall if there is one
+        p_client.goto("https://www.allocine.fr").await?;
+
+        let button_locator = Locator::Css("div#dfp_interstitial__top-close");
+        p_client
+            .wait()
+            .at_most(Duration::from_secs(3))
+            .for_element(button_locator)
+            .await?;
+
+        let v_button = p_client.find(button_locator).await;
+
+        if let Ok(i) = v_button {
+            i.click().await?
+        }
+
+        Ok(())
     }
 
     pub async fn get_all_screenings_for_movie(
@@ -52,10 +80,6 @@ impl AllocineAction {
         let theater_cards = Self::get_theater_cards(&p_client).await?;
         for theater_card in theater_cards.into_iter() {
             let mut _theater_screenings = Self::get_theater_screenings(&theater_card).await?;
-            //let mut _theater_screenings = match Self::get_theater_screenings(&theater_card).await {
-            //    Ok(x) => x,
-            //    Err(_e) => Vec::new(),
-            //};
             screenings.append(&mut _theater_screenings);
         }
 
