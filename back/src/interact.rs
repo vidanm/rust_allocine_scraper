@@ -179,16 +179,16 @@ impl AllocineAction {
 
         let v_versions = p_theater_card
             .find_all(Locator::Css("div.showtimes-version"))
-            // .find_all(Locator::Css("span.showtimes-hour-item-value"))
             .await?;
 
-        for version in v_versions {
-            let v_screening_card = version
+        for version_card in v_versions {
+            let v_screening_card = version_card
                 .find_all(Locator::Css("span.showtimes-hour-item-value"))
                 .await?;
 
             for scr_card in v_screening_card {
                 let datetime = scr_card.text().await?;
+                let version = version_card.find(Locator::Css("div.text")).await?;
                 screenings.push(Screening::new(
                     version.text().await?,
                     datetime,
@@ -198,7 +198,6 @@ impl AllocineAction {
             }
         }
 
-        //println!("{:?}", screenings);
         Ok(screenings)
     }
 }

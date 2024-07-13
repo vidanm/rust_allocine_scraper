@@ -2,13 +2,42 @@ pub mod errors;
 pub mod interact;
 pub mod movie;
 mod tests;
+use crate::movie::screening::Screening;
 use crate::movie::Movie;
 use errors::AppError;
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder};
 use interact::AllocineAction;
+use rocket::form::validate::with;
+use rocket::http::ext::IntoCollection;
 use rocket::State;
 use serde_json;
+
+use rocket::fairing::{Fairing, Info, Kind};
+use rocket::http::Header;
+use rocket::{Request, Response};
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new(
+            "Access-Control-Allow-Methods",
+            "POST, GET, PATCH, OPTIONS",
+        ));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+    }
+}
 
 #[macro_use]
 extern crate rocket;
@@ -25,23 +54,32 @@ extern crate rocket;
 async fn get_screenings(director: &str, title: &str, p_client: &State<Client>) -> String {
     let p_movie = Movie::new(title.to_string(), director.to_string());
 
-    let _ = AllocineAction::accept_paywall(p_client).await; //Traiter l'erreur si le click ne
-    let _ = AllocineAction::close_interstitial(p_client).await; //fonctionne pas ?
+    let _ = AllocineAction::accept_paywall(p_client).await;
+    let _ = AllocineAction::close_interstitial(p_client).await;
 
     let out = match AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await {
-        Ok(c) => match serde_json::to_string(&c) {
-            Ok(x) => x,
-            Err(e) => e.to_string(),
-        },
+        Ok(mut c) => {
+            c.sort_unstable_by_key(|screening| {
+                (screening.cinema.clone(), screening.version.clone())
+            });
+
+            let x: Vec<_> = c
+                .chunk_by(|a, b| a.cinema.clone() == b.cinema.clone())
+                .into_iter()
+                .collect();
+
+            match serde_json::to_string(&x) {
+                Ok(x) => x,
+                Err(e) => e.to_string(),
+            }
+        }
         Err(e) => match e {
             AppError::IllegalArgument => String::from("Illegal Argument Error"),
             AppError::ElementNotFound => String::from("Element Not Found Error"),
             AppError::CmdError(e) => match e {
                 CmdError::Standard(wd) => match wd.error() {
                     "element click intercepted" => {
-                        let _ = AllocineAction::accept_paywall(p_client).await;
                         format!("{}", "element click intercepted").to_string()
-                        // A implémenter : récursion
                     }
                     _e => {
                         println!("{}", _e);
@@ -66,12 +104,8 @@ async fn index(director: &str, title: &str, p_client: &State<Client>) -> String 
 #[launch]
 #[tokio::main]
 async fn rocket() -> _ {
-    //let _client: &'static Client =
-    // rocket::custom(config).mount("/",routes![index])
-    //_client.close().await.expect("Can't close the client");
-    //rocket::build().mount("/", routes![index])
-    //rocket::build().manage(&_client).mount("/", routes![index])
     rocket::build()
+        .attach(CORS)
         .manage(
             ClientBuilder::native()
                 .connect("http://127.0.0.1:4444")
@@ -83,7 +117,3 @@ async fn rocket() -> _ {
         )
         .mount("/", routes![index])
 }
-// #[rocket::async_trait]
-// impl Fairing for Client {
-
-// r
