@@ -2,20 +2,19 @@ pub mod errors;
 pub mod interact;
 pub mod movie;
 mod tests;
-use crate::movie::screening::Screening;
 use crate::movie::Movie;
 use errors::AppError;
 use fantoccini::error::CmdError;
 use fantoccini::{Client, ClientBuilder};
 use interact::AllocineAction;
-use rocket::form::validate::with;
-use rocket::http::ext::IntoCollection;
-use rocket::State;
-use serde_json;
-
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Header;
+use rocket::Shutdown;
 use rocket::{Request, Response};
+
+use serde_json;
+#[macro_use]
+extern crate rocket;
 
 pub struct CORS;
 
@@ -39,25 +38,27 @@ impl Fairing for CORS {
     }
 }
 
-#[macro_use]
-extern crate rocket;
-//use rocket::Shutdown;
-//
-//#[get("/shutdown")]
-//async fn shutdown(shutdown: Shutdown) -> &'static str {
-//    shutdown.notify();
-//    //close client
-//    // p_client.close().await;
-//    "Shutting down..."
-//}
+#[get("/shutdown")]
+async fn shutdown(shutdown: Shutdown) -> &'static str {
+    shutdown.notify();
+    "Shutting down..."
+}
 
-async fn get_screenings(director: &str, title: &str, p_client: &State<Client>) -> String {
+async fn get_screenings(director: &str, title: &str) -> String {
+    let p_client: Client = ClientBuilder::rustls()
+        //.connect("http://geckodriver:4444")
+        .connect("http://geckodriver:4444")
+        .await
+        .expect(
+            "Failed to connect to WebDriver. \n 
+            Start the WebDriver with 'geckodriver' command",
+        );
+
     let p_movie = Movie::new(title.to_string(), director.to_string());
+    let _ = AllocineAction::accept_paywall(&p_client).await;
+    let _ = AllocineAction::close_interstitial(&p_client).await;
 
-    let _ = AllocineAction::accept_paywall(p_client).await;
-    let _ = AllocineAction::close_interstitial(p_client).await;
-
-    let out = match AllocineAction::get_all_screenings_for_movie(p_client, &p_movie).await {
+    let out = match AllocineAction::get_all_screenings_for_movie(&p_client, &p_movie).await {
         Ok(mut c) => {
             c.sort_unstable_by_key(|screening| {
                 (screening.cinema.clone(), screening.version.clone())
@@ -97,8 +98,8 @@ async fn get_screenings(director: &str, title: &str, p_client: &State<Client>) -
 }
 
 #[get("/<director>/<title>")]
-async fn index(director: &str, title: &str, p_client: &State<Client>) -> String {
-    get_screenings(director, title, p_client).await
+async fn index(director: &str, title: &str) -> String {
+    get_screenings(director, title).await
 }
 
 #[launch]
@@ -106,14 +107,5 @@ async fn index(director: &str, title: &str, p_client: &State<Client>) -> String 
 async fn rocket() -> _ {
     rocket::build()
         .attach(CORS)
-        .manage(
-            ClientBuilder::native()
-                .connect("http://127.0.0.1:4444")
-                .await
-                .expect(
-                    "Failed to connect to WebDriver. \n 
-            Start the WebDriver with 'geckodriver' command",
-                ),
-        )
-        .mount("/", routes![index])
+        .mount("/", routes![index, shutdown])
 }

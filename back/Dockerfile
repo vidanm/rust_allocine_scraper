@@ -1,8 +1,8 @@
-FROM rust:1.76-alpine
+FROM rust:1.77-alpine
 WORKDIR /home/vidan/Documents/Personnel/rust-allocine-parser/rust
 COPY . .
-ENV ROCKET_ADDRESS "127.0.0.1"
-ENV ROCKET_PORT 8000
+ENV ROCKET_ADDRESS=0.0.0.0
+ENV ROCKET_PORT=8000
 EXPOSE 8000
 RUN apk add musl-dev libressl-dev && \
     cargo install --path .
