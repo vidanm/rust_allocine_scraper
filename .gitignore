@@ -1,9 +1,0 @@
-.gitignore
-/target
-geckodriver_install.sh
-start.sh
-start_sql_db
-back/target
-.vscode/
-webdriver.sh
-notes_docker.md
