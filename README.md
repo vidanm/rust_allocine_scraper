@@ -10,4 +10,3 @@ Ce projet à donc pour but de permettre à un utilisateur de choisir parmi un gr
 # Installation locale
 via Docker
 `docker compose up -d`
-L'API est ensuite accessible via http://rust-allocine-scraper:8000
